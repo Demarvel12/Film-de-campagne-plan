@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isminia — Planning Tournage</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #ffffff;
+  --surface: #f5f5f5;
+  --surface2: #eeeeee;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --muted: #888;
+  --accent: #1a1a1a;
+  --accent-dim: rgba(26,26,26,0.06);
+  --red: #c0392b;
+  --red-bg: #fff5f4;
+  --red-border: #f5c6c2;
+}
+body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 80px; }
+
+/* HEADER */
+header { padding: 44px 40px 28px; border-bottom: 1px solid var(--border); }
+header h1 { font-size: clamp(2rem,5vw,3.2rem); font-weight: 800; letter-spacing: -2px; color: #000; line-height: 1; }
+header h1 span { color: var(--red); }
+header p { font-family: 'Lora',serif; font-style: italic; color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+
+/* TABS */
+.tabs { display: flex; gap: 2px; padding: 0 40px; border-bottom: 1px solid var(--border); margin-top: 24px; }
+.tab-btn { font-family: 'Syne',sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 12px 18px; background: transparent; border: none; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: #000; border-bottom-color: #000; }
+
+/* MAIN */
+.main { padding: 32px 40px; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* SCHEDULE */
+.schedule-scroll { overflow-x: auto; padding-bottom: 8px; }
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 140px repeat(5, minmax(175px,1fr)) minmax(190px,220px);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  min-width: 980px;
+}
+
+/* Column header */
+.col-header { background: var(--surface); padding: 13px 15px; border-bottom: 2px solid var(--text); }
+.col-header.deadline-col { border-bottom-color: var(--red); }
+.col-day { font-size: 0.58rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.col-label { font-size: 0.92rem; font-weight: 700; color: #000; margin-top: 2px; line-height: 1.2; }
+.col-label.red { color: var(--red); }
+.col-sub { font-family: 'Lora',serif; font-style: italic; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.col-body { background: var(--bg); padding: 11px; display: flex; flex-direction: column; gap: 7px; }
+
+/* EVENT CARD */
+.event-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  position: relative;
+}
+.event-card:hover { border-color: #000; background: var(--accent-dim); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.event-card.deadline {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+}
+.event-card.deadline:hover { border-color: var(--red); }
+
+.event-time { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.event-card.deadline .event-time { color: var(--red); }
+.event-title { font-size: 0.8rem; font-weight: 700; color: #000; line-height: 1.35; margin-bottom: 6px; }
+.event-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.chip {
+  font-size: 0.58rem; font-weight: 700; padding: 2px 6px; border-radius: 2px;
+  background: #e8e8e8; color: #555; cursor: pointer;
+  border: 1px solid transparent; transition: all .15s;
+}
+.chip:hover { background: #000; color: #fff; }
+.event-arrow { position: absolute; top: 8px; right: 8px; font-size: 0.6rem; color: #ccc; transition: color .15s; }
+.event-card:hover .event-arrow { color: #000; }
+
+.schedule-hint { font-family: 'Lora',serif; font-style: italic; font-size: 0.75rem; color: var(--muted); margin-top: 12px; }
+
+/* MODAL */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 20px; }
+.overlay.open { display: flex; }
+.modal { background: #fff; border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; animation: up .2s ease; box-shadow: 0 8px 40px rgba(0,0,0,.15); }
+@keyframes up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.modal-hd { padding: 22px 22px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; position: sticky; top: 0; background: #fff; z-index: 1; }
+.modal-time { font-size: 0.58rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.modal-title { font-size: 1.05rem; font-weight: 700; color: #000; line-height: 1.3; }
+.close-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.close-btn:hover { background: #000; color: #fff; border-color: #000; }
+.modal-bd { padding: 18px 22px 22px; display: flex; flex-direction: column; gap: 16px; }
+.sec-label { font-size: 0.58rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.modal-desc { font-family: 'Lora',serif; font-size: 0.88rem; line-height: 1.7; color: #444; }
+.req-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.req-list li { font-size: 0.84rem; color: #444; padding-left: 16px; position: relative; line-height: 1.5; }
+.req-list li::before { content: '→'; position: absolute; left: 0; color: #000; font-size: 0.75rem; }
+.lieu-box { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px; font-size: 0.85rem; color: #222; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.lieu-box .lieu-icon { font-size: 1rem; }
+.modal-cast-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.modal-cast-chip { font-size: 0.75rem; font-weight: 600; padding: 5px 11px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; color: var(--text); cursor: pointer; transition: all .15s; }
+.modal-cast-chip:hover { background: #000; color: #fff; border-color: #000; }
+
+/* CAST TAB */
+.cast-search-wrap { max-width: 360px; margin-bottom: 22px; position: relative; }
+.cast-search { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 14px 10px 36px; font-family: 'Syne',sans-serif; font-size: 0.85rem; color: var(--text); outline: none; transition: border-color .15s; }
+.cast-search:focus { border-color: #000; }
+.cast-search::placeholder { color: var(--muted); }
+.sico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.85rem; pointer-events: none; }
+.cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 7px; }
+.cast-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 13px 15px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.cast-card:hover { border-color: #000; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.cast-card.active { border-color: #000; background: var(--accent-dim); }
+.cast-name { font-size: 0.9rem; font-weight: 700; color: #000; margin-bottom: 3px; }
+.cast-role { font-family: 'Lora',serif; font-style: italic; font-size: 0.74rem; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+.cast-day-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.cast-day-chip { font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 2px 6px; background: #e8e8e8; border-radius: 2px; color: #666; }
+
+/* PERSON DETAIL */
+.person-detail { display: none; background: #fff; border: 1px solid #000; border-radius: 6px; padding: 24px; margin-top: 16px; animation: up .2s ease; }
+.person-detail.open { display: block; }
+.pd-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.pd-name { font-size: 1.5rem; font-weight: 800; color: #000; letter-spacing: -0.5px; }
+.pd-role { font-family: 'Lora',serif; font-style: italic; color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+.inv-block { border: 1px solid var(--border); border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+.inv-hd { background: var(--surface); padding: 9px 13px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.inv-day { font-size: 0.58rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
+.inv-scene { font-size: 0.82rem; font-weight: 700; color: #000; }
+.inv-bd { padding: 12px 13px; display: flex; flex-direction: column; gap: 12px; }
+.inv-task { font-family: 'Lora',serif; font-size: 0.85rem; color: #444; line-height: 1.65; }
+.sub-lbl { font-size: 0.56rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.script-lines { display: flex; flex-direction: column; gap: 6px; }
+.script-line { background: var(--surface); border-left: 2px solid #000; padding: 7px 11px; border-radius: 0 3px 3px 0; }
+.script-char { font-size: 0.58rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #000; margin-bottom: 3px; }
+.script-text { font-family: 'Lora',serif; font-style: italic; font-size: 0.83rem; color: #333; line-height: 1.5; }
+
+@media (max-width:600px) { header, .tabs, .main { padding-left:18px; padding-right:18px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>IS<span>MINIA</span></h1>
+  <p>Western Fantastique — Planning de tournage</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('planning',this)">Planning</button>
+  <button class="tab-btn" onclick="switchTab('cast',this)">Cast</button>
+</div>
+
+<div class="main">
+  <div id="tab-planning" class="tab-pane active">
+    <div class="schedule-scroll">
+      <div class="schedule-grid" id="scheduleGrid"></div>
+    </div>
+    <p class="schedule-hint">Clique sur une tâche pour les détails, le lieu et les prérequis. Clique sur un nom pour sa fiche complète.</p>
+  </div>
+
+  <div id="tab-cast" class="tab-pane">
+    <div class="cast-search-wrap">
+      <span class="sico">⌕</span>
+      <input type="text" class="cast-search" id="castSearch" placeholder="Tape ton prénom…" oninput="filterCast(this.value)">
+    </div>
+    <div class="cast-grid" id="castGrid"></div>
+    <div class="person-detail" id="personDetail">
+      <div class="pd-top">
+        <div><div class="pd-name" id="pdName"></div><div class="pd-role" id="pdRole"></div></div>
+        <button class="close-btn" onclick="closeDetail()">✕</button>
+      </div>
+      <div id="pdBody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-hd">
+      <div><div class="modal-time" id="mTime"></div><div class="modal-title" id="mTitle"></div></div>
+      <button class="close-btn" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-bd" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+const DAYS = [
+  {
+    key: 'horaire', label: 'Horaire', sub: '', isTime: true
+  },
+  {
+    key: 'mer', label: 'Mercredi', sub: '',
+    events: [
+      {
+        time: 'Dans la journée',
+        title: 'Appeler The Rider Saloon',
+        desc: 'Confirmer la disponibilité et la réservation du lieu pour le tournage saloon du samedi matin 10h.',
+        lieu: 'Appel téléphonique',
+        prereqs: ['Avoir le numéro du Rider Saloon'],
+        cast: ['Responsable orga'],
+        isDeadline: false
+      }
+    ]
+  },
+  {
+    key: 'jeu', label: 'Jeudi', sub: '',
+    events: [
+      {
+        time: 'Après-midi',
+        title: 'Photos Freeze Frames (affiches WANTED)',
+        desc: 'Séance photo de chaque personnage pour les affiches WANTED et les freeze frames du montage.',
+        lieu: 'À déterminer (même lieu pour tout le monde)',
+        prereqs: ['Vérifier disponibilités du cast en amont', 'Appareil photo ou smartphone haute qualité'],
+        cast: ['Bastien', 'Youenn', 'Édouard', 'Maxence', 'Jilliane', 'Thibault', 'Noa', 'Marin', 'Thiporrah'],
+        isDeadline: false
+      },
+      {
+        time: '17h — 18h',
+        title: 'Scène Bibliothèque (Acte 1)',
+        desc: 'Auxence entre dans la bibliothèque, marche entre les rayonnages. Un livre tombe au sol — seul élément en couleur. Il l\'ouvre, lumière colorée dans ses yeux. Transition vers le Far West.',
+        lieu: 'Bibliothèque Nelson Mandela',
+        prereqs: ['Prévoir un vieux livre style conte', 'Créer / coller un label "Isminia" sur la couverture'],
+        cast: ['Auxence'],
+        isDeadline: false
+      },
+      {
+        time: '~19h (avant Petit Bar)',
+        title: 'Scènes ME — Figurants (Actes 1 & 4)',
+        desc: 'Ping-pong, baby-foot, Comif. Scènes de vie du campus pour l\'intro désaturée ET la scène finale colorée.',
+        lieu: 'Maison des Élèves — Patio, Comif, baby-foot',
+        prereqs: ['Baptiste DOIT être présent', 'Sondage figurants fait en amont', 'Prévoir voiture(s) si certains figurants viennent de loin'],
+        cast: ['Baptiste', 'Clément', 'Nicolas', 'Mariem', 'Peter', 'Noa', 'Mathis', 'Youenn', 'Mathieu'],
+        isDeadline: false
+      }
+    ]
+  },
+  {
+    key: 'ven', label: 'Vendredi', sub: '',
+    events: [
+      {
+        time: '~18h',
+        title: 'Fond Vert — Videur, Porte, Énigme, Finale',
+        desc: '4 scènes tournées sur fond vert :\n• Jilliane devant le saloon (Acte 2)\n• Porte de la Jouvence + compteur dynamite (Acte 3)\n• Auxence seul dans la salle de l\'énigme, pièce blanche (Acte 3)\n• Scène finale soirée jeux (Acte 4)',
+        lieu: 'Salle commune — ex. salle 1100 ou 1200',
+        prereqs: ['Réserver une salle commune (1100, 1200…)', 'Récupérer le fond vert au BDA', 'TOUT LE MONDE en tenue tournage (mêmes tenues que tout le film)', 'Apporter un jeu de société pour la scène finale', 'Prévoir voitures si nécessaire'],
+        cast: ['Auxence', 'Jilliane', 'Édouard', 'Maxence', 'Thibault', 'Noa', 'Thiporrah', 'Baptiste'],
+        isDeadline: false
+      }
+    ]
+  },
+  {
+    key: 'sam', label: 'Samedi', sub: '',
+    events: [
+      {
+        time: '10h',
+        title: 'Tournage Saloon (Acte 2)',
+        desc: 'Plan A : The Rider Saloon. Plan B : fond vert BDA.\nArrivée des personnages, confrontation avec le videur, table de poker (Thibault + Marin), duel final Auxence vs Marin, discours d\'Auxence. Ambiance musicale avec Camille et Bastien.',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        prereqs: ['Être sur le lieu de tournage à 10h pile', 'Confirmer le Rider avant (appel mercredi)', 'Prévoir voiture(s) pour le trajet', 'Guitar + musique préparée', 'Mallette de poker', 'Quelques € pour consommations si The Rider', 'Tout le monde en tenue tournage'],
+        cast: ['Auxence', 'Édouard', 'Maxence', 'Jilliane', 'Thibault', 'Noa', 'Marin', 'Thiporrah', 'Camille', 'Bastien'],
+        isDeadline: false
+      },
+      {
+        time: '12h — 13h',
+        title: 'Tournage Duel (Acte 2)',
+        desc: 'Rue poussiéreuse. Plans resserrés : bottes, mains, yeux. Édouard et Maxence face à face. Auxence surgit au milieu. Tension. Pistolets à eau. Freeze frames.',
+        lieu: 'Lieu intérieur à confirmer (Inté) — extérieur type "rue" recherché',
+        prereqs: ['Être sur le lieu de tournage à 12h', 'Prévoir voiture(s) pour le déplacement', 'Bottes + jean + chapeau cowboy', 'Pistolets à eau — acheter chez Action'],
+        cast: ['Auxence', 'Édouard', 'Maxence'],
+        isDeadline: false
+      }
+    ]
+  },
+  {
+    key: 'deadline', label: 'Deadline', sub: 'Dimanche', isDeadline: true,
+    events: [
+      {
+        time: 'DEADLINE',
+        title: 'Plans Drone',
+        desc: 'Les plans drone de la ME (vide et animée avec figurants) doivent être exportés, nommés et partagés pour le montage.',
+        lieu: 'Maison des Élèves — intérieur (salles, couloirs) et extérieur (patio, potager)',
+        prereqs: ['Tournage réalisé avant dimanche', 'Fichiers exportés et partagés avec le monteur'],
+        cast: ['Baptiste'],
+        isDeadline: true
+      },
+      {
+        time: 'DEADLINE',
+        title: 'Affiches WANTED',
+        desc: 'Toutes les affiches des personnages (Édouard, Maxence, Jilliane, Thibault, Marin, Thiporrah) créées et rendues pour le montage.',
+        lieu: '—',
+        prereqs: ['Photos de Bastien reçues', 'Template affiche WANTED western créé', 'Une affiche par personnage principal'],
+        cast: ['Youenn'],
+        isDeadline: true
+      },
+      {
+        time: 'DEADLINE',
+        title: 'Voix Off',
+        desc: 'Enregistrement de toutes les voix off du film : intro campus, mythologie du bélier, prophétie, transitions entre actes, voix off finale.',
+        lieu: 'Espace calme sans écho (chambre, local isolé…)',
+        prereqs: ['Micro + logiciel d\'enregistrement', 'Texte complet du scénario imprimé', 'Ton naturel pour l\'intro, plus mythique pour la prophétie'],
+        cast: ['Soulaf', 'Bastien'],
+        isDeadline: true
+      },
+      {
+        time: 'DEADLINE',
+        title: 'Animations',
+        desc: 'Créer les animations du film : livre qui s\'anime (ref TikTok ZSmPcrPha / ZSmfEPqYY), carte style Game of Thrones (voyageurs qui avancent, obstacles, Maxence qui explose), transitions de scènes.',
+        lieu: '—',
+        prereqs: ['Logiciel d\'animation', 'Liens ref TikTok sauvegardés', 'Coordination avec le montage'],
+        cast: ['Thiporrah', 'Bastien'],
+        isDeadline: true
+      }
+    ]
+  }
+];
+
+const CAST = {
+  'Auxence': {
+    role: 'Protagoniste — Étudiant en quête de sens',
+    days: ['Jeudi', 'Vendredi', 'Samedi'],
+    involvements: [
+      {
+        day: 'Jeudi 17h–18h', scene: 'Scène Bibliothèque — Acte 1',
+        lieu: 'Bibliothèque Nelson Mandela',
+        task: 'Auxence entre dans la bibliothèque, marche entre les rayonnages. Un livre tombe — seul élément en couleur dans un monde noir et blanc. Il l\'ouvre, lumière colorée qui se reflète dans ses yeux.',
+        prep: ['Tenue neutre (pas western)', 'Laisser la lumière du livre se refléter sur le visage'],
+        scripts: []
+      },
+      {
+        day: 'Vendredi ~18h', scene: 'Fond Vert — Porte + Énigme + Finale (Actes 3 & 4)',
+        lieu: 'Salle commune — ex. salle 1100 ou 1200',
+        task: 'Devant la porte massive : compteur s\'enclenche. Il rentre seul dans la salle blanche et résout l\'énigme. Puis scène soirée jeux avec les potes.',
+        prep: ['Tenue tournage COMPLÈTE (même tenue que tout le film)', 'Fond vert BDA', 'Jeu de société apporté'],
+        scripts: [
+          { char: 'AUXENCE', line: 'Du calme, du calme les gars. C\'est moi qui vous ai amenés jusque-là ; je ne compte pas vous abandonner. Je rentre, faites-moi confiance : je ressortirai avec la Jouvence.' }
+        ]
+      },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Arrive avec ses compagnons. Affronte le videur. S\'installe au poker. Gagne contre Marin. Lance le grand discours à toute la salle.',
+        prep: ['Tenue tournage COMPLÈTE', 'Être sur place à 10h pile'],
+        scripts: [
+          { char: 'AUXENCE', line: 'On n\'est pas des pélo. On est là pour une quête des plus importantes…' },
+          { char: 'AUXENCE', line: 'Salut les gars, on est à la recherche d\'un Coyote. Vous pouvez nous aider ?' },
+          { char: 'AUXENCE', line: 'Pas pour cette fois.' },
+          { char: 'AUXENCE', line: 'Attends ! Je suis à la recherche du Coyote. J\'ai besoin de son aide pour rétablir l\'ambiance à Isminia.' },
+          { char: 'AUXENCE (discours)', line: 'Je suis prêt à tout pour rétablir l\'atmosphère d\'antan d\'Isminia, même à mettre ma vie en péril. Cette quête n\'est pas seulement la mienne. Elle appartient à tous ceux présents dans ce monde. Soyez dynamiquement miens, chers amis, et mettons la main sur ce Coyote ! Êtes-vous avec moi ?' }
+        ]
+      },
+      {
+        day: 'Samedi 12h–13h', scene: 'Duel — Acte 2',
+        lieu: 'Lieu intérieur à confirmer',
+        task: 'Surgit au milieu du duel Édouard/Maxence. Réagit aux pistolets à eau. Propose à Édouard et Maxence de le rejoindre.',
+        prep: ['Tenue tournage COMPLÈTE'],
+        scripts: [
+          { char: 'AUXENCE', line: 'C\'est à moi de dire ça.' },
+          { char: 'AUXENCE', line: 'Vous m\'avez bien fait rire. J\'ai besoin d\'aide : je suis en terre inconnue et je cherche le Coyote, détenteur de la Jouvence Dynamitée.' },
+          { char: 'AUXENCE', line: 'Dernière question. Je vous trouve de bonne compagnie… est-ce que vous voulez me suivre dans cette quête ?' }
+        ]
+      }
+    ]
+  },
+  'Édouard': {
+    role: 'Édouard le Grand — Cow-boy provocateur, dueliste excessif',
+    days: ['Jeudi (photos)', 'Vendredi', 'Samedi'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED d\'Édouard le Grand.', prep: ['Tenue tournage', 'Attitude provocatrice, pistolet à eau en main'], scripts: [] },
+      { day: 'Vendredi ~18h', scene: 'Scène finale — Acte 4', lieu: 'Salle commune — ex. salle 1100 ou 1200', task: 'Soirée jeux avec Auxence et les potes.', prep: ['Mêmes tenues que tout le film'], scripts: [{ char: 'ÉDOUARD (Pote 1)', line: 'Soirée jeux ce soir ! On y va ?' }] },
+      { day: 'Samedi 10h', scene: 'Saloon — Acte 2', lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune', task: 'Compagnon d\'Auxence. Sort le pistolet à eau au videur (refusé). Ambiance saloon.', prep: ['Tenue tournage COMPLÈTE', 'Pistolet à eau', 'Être sur place à 10h pile'], scripts: [] },
+      {
+        day: 'Samedi 12h–13h', scene: 'Duel — Acte 2', lieu: 'Lieu intérieur à confirmer',
+        task: 'Face à Maxence dans le duel. Plans : mains, yeux, bottes. Dégaine le pistolet à eau.',
+        prep: ['Tenue tournage (bottes + jean + chapeau cowboy)', 'Pistolet à eau', 'Prévoir voiture si possible'],
+        scripts: [
+          { char: 'ÉDOUARD', line: 'T\'es tombé d\'où, toi ?' },
+          { char: 'ÉDOUARD', line: 'Maxence, cherche pas à détourner l\'attention, j\'vais t\'éclater le gosier.' },
+          { char: 'ÉDOUARD + MAXENCE', line: 'Personne ne sait où ce vagabond se trouve. Mais tu auras plus de chances d\'obtenir des renseignements auprès des anciens du saloon.' }
+        ]
+      }
+    ]
+  },
+  'Maxence': {
+    role: 'La Canaille Chapardeuse — Comique imprévisible et absurde',
+    days: ['Jeudi (photos)', 'Vendredi', 'Samedi'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED de La Canaille Chapardeuse.', prep: ['Tenue tournage', 'Tête de filou'], scripts: [] },
+      { day: 'Vendredi ~18h', scene: 'Scène finale — Acte 4', lieu: 'Salle commune — ex. salle 1100 ou 1200', task: 'Soirée jeux avec Auxence et les potes.', prep: ['Mêmes tenues'], scripts: [{ char: 'MAXENCE (Pote 2)', line: 'Ça fait longtemps qu\'on n\'a pas fait ça.' }] },
+      { day: 'Samedi 10h', scene: 'Saloon — Acte 2', lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune', task: 'Sort le fromage + saucisson type Comif pour corrompre le videur. Scène humoristique clé.', prep: ['Tenue tournage COMPLÈTE', 'Fromage + saucisson type Comif à apporter', 'Être sur place à 10h pile'], scripts: [{ char: 'MAXENCE', line: 'On a quelque chose que tu ne pourras refuser.' }] },
+      {
+        day: 'Samedi 12h–13h', scene: 'Duel — Acte 2', lieu: 'Lieu intérieur à confirmer',
+        task: 'Face à Édouard dans le duel. Commentaire absurde à l\'arrivée d\'Auxence. Dégaine le pistolet à eau.',
+        prep: ['Tenue tournage (bottes + jean + chapeau cowboy)', 'Pistolet à eau', 'Prévoir voiture si possible'],
+        scripts: [
+          { char: 'MAXENCE', line: 'Par la Sainte Barbe, on est chez les fous ?!' },
+          { char: 'ÉDOUARD + MAXENCE', line: 'Personne ne sait où ce vagabond se trouve. Mais tu auras plus de chances d\'obtenir des renseignements auprès des anciens du saloon.' }
+        ]
+      }
+    ]
+  },
+  'Jilliane': {
+    role: 'Jilou le poids lourd — Videur du Saloon / Respo Sécu Far West',
+    days: ['Jeudi (photos)', 'Vendredi', 'Samedi'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED de Jilou le poids lourd.', prep: ['Tenue tournage', 'Pose imposante'], scripts: [] },
+      {
+        day: 'Vendredi ~18h', scene: 'Fond Vert — Devant le Saloon + Finale (Actes 2 & 4)',
+        lieu: 'Salle commune — ex. salle 1100 ou 1200',
+        task: 'Scène videur : bloque l\'entrée, refuse pistolet et chapeau, accepte le fromage. Puis scène finale soirée jeux.',
+        prep: ['Tenue tournage COMPLÈTE', 'Fond vert BDA'],
+        scripts: [
+          { char: 'JILLIANE', line: 'On accepte pas les pélo par ici.' },
+          { char: 'JILLIANE', line: 'Trêve de bavardage. Soit tu proposes quelque chose de valeur, soit tu pars.' },
+          { char: 'JILLIANE', line: 'Si tu me prends pour un crétin pour accepter ce genre de truc bon marché type Lidl… eh bien tu as raison !' },
+          { char: 'JILLIANE (Pote 4)', line: 'J\'ai ramené la boisson.' }
+        ]
+      },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Rentre dans le saloon après le discours d\'Auxence. Pleure d\'émotion. Présente aussi la scène devant la porte de la Jouvence.',
+        prep: ['Tenue tournage COMPLÈTE', 'Être sur place à 10h pile'],
+        scripts: [
+          { char: 'JILLIANE (devant la porte)', line: 'Je savais depuis le début que ce n\'était pas une bonne idée.' },
+          { char: 'JILLIANE (après le discours)', line: 'Qu\'est-ce qu\'il est inspirant, le petit pélo…' }
+        ]
+      }
+    ]
+  },
+  'Thibault': {
+    role: 'As de la com — Joueur de cartes, complice de Noa',
+    days: ['Jeudi (photos)', 'Vendredi', 'Samedi'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED de Thibault.', prep: ['Tenue tournage', 'Cartes en main'], scripts: [] },
+      { day: 'Vendredi ~18h', scene: 'Scène finale — Acte 4', lieu: 'Salle commune — ex. salle 1100 ou 1200', task: 'Déjà installé dans la pièce quand Auxence et les potes arrivent.', prep: ['Mêmes tenues'], scripts: [{ char: 'THIBAULT (Pote 3)', line: 'Vous en avez mis du temps !' }] },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Joueur de cartes aux côtés de Noa. Conditionne l\'aide à gagner au poker.',
+        prep: ['Tenue tournage COMPLÈTE', 'Mallette de poker', 'Être sur place à 10h pile (vraiment)'],
+        scripts: [{ char: 'THIBAULT', line: 'On ne parle qu\'aux gagnants. J\'espère que vous avez de quoi jouer.' }]
+      }
+    ]
+  },
+  'Marin': {
+    role: 'Secrétaire Pêcheur — Charmeur confiant, rival final au poker',
+    days: ['Jeudi (photos)', 'Samedi'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED de Marin.', prep: ['Tenue tournage', 'Sourire confiant, voire arrogant'], scripts: [] },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Dernier joueur face à Auxence au poker. Confiant. Perd. S\'énerve.',
+        prep: ['Tenue tournage COMPLÈTE', 'Être sur place à 10h pile'],
+        scripts: [
+          { char: 'MARIN', line: 'C\'est soit vous gagnez, soit vous dégagez.' },
+          { char: 'MARIN', line: 'C\'est terminé pour toi.' },
+          { char: 'MARIN (énervé)', line: 'De toute façon, c\'est un jeu de merde avec plein de tricheurs !' },
+          { char: 'MARIN', line: 'Ce vieux "chien" n\'est qu\'une légende. Il n\'y a que les enfants pour croire à cela.' }
+        ]
+      }
+    ]
+  },
+  'Thiporrah': {
+    role: 'Serveuse du Saloon — Détentrice de l\'info sur le Coyote',
+    days: ['Jeudi (photos)', 'Vendredi', 'Samedi', 'Deadline'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED de Thiporrah.', prep: ['Tenue tournage serveuse (corset + jupe, ref moodboard)', 'Bottines'], scripts: [] },
+      { day: 'Vendredi ~18h', scene: 'Scène finale — Acte 4', lieu: 'Salle commune — ex. salle 1100 ou 1200', task: 'Scène soirée jeux avec les potes.', prep: ['Mêmes tenues'], scripts: [{ char: 'THIPORRAH (Pote 5)', line: 'Et moi la bouffe.' }] },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Sert un verre. Révèle la localisation du Coyote. Réplique ironique finale.',
+        prep: ['Tenue tournage COMPLÈTE (corset + jupe + bottines)', 'Être sur place à 10h pile'],
+        scripts: [
+          { char: 'SERVEUSE', line: 'Je t\'ai entendu. Ta quête est honorable. La dernière fois que le Coyote a été aperçu, c\'était à la Maison des Cow-boys. Un endroit très difficile d\'accès, car il regorge de dynamite souterraine pouvant exploser à tout moment.' },
+          { char: 'SERVEUSE (ironique)', line: 'Toujours lui, avec ses beaux discours.' }
+        ]
+      },
+      {
+        day: 'Deadline Dimanche', scene: 'Animations',
+        lieu: '—',
+        task: 'Créer les animations : livre qui s\'anime (ref TikTok ZSmPcrPha / ZSmfEPqYY), carte style Game of Thrones (voyageurs, obstacles, Maxence qui explose), transitions.',
+        prep: ['Logiciel d\'animation', 'Liens TikTok de référence sauvegardés'],
+        scripts: []
+      }
+    ]
+  },
+  'Camille': {
+    role: 'Chanteuse du Saloon — Ambiance musicale',
+    days: ['Samedi'],
+    involvements: [
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Chanteuse de saloon. Plans sur les lèvres qui chantent, la main sur l\'instrument. Ambiance du lieu.',
+        prep: ['Tenue tournage chanteuse western (ref moodboard)', 'Chanson préparée', 'Être sur place à 10h pile'],
+        scripts: []
+      }
+    ]
+  },
+  'Bastien': {
+    role: 'Musicien + Photos + Post-prod (voix off, animations, enceintes)',
+    days: ['Jeudi', 'Samedi', 'Deadline'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photos Freeze Frames', lieu: 'À déterminer', task: 'Bastien est le photographe pour tous les freeze frames du cast.', prep: ['Appareil photo ou smartphone haute qualité', 'Vérifier disponibilités en amont'], scripts: [] },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Musicien de saloon. Plans sur la main qui joue de la guitare.',
+        prep: ['Guitar', 'Musique préparée et répétée', 'Être sur place à 10h pile', 'Enceintes Bluetooth (pour la scène finale vendredi aussi)'],
+        scripts: []
+      },
+      {
+        day: 'Deadline Dimanche', scene: 'Voix Off + Animations + Enceintes',
+        lieu: 'Espace calme pour l\'enregistrement',
+        task: 'Enregistrement de certaines voix off. Aide sur les animations. Enceintes = prop de la scène finale (la musique devient plus forte dans le film).',
+        prep: ['Matériel d\'enregistrement', 'Enceintes Bluetooth à apporter vendredi soir'],
+        scripts: []
+      }
+    ]
+  },
+  'Soulaf': {
+    role: 'Voix Off principale — La voix de la prophétie et du narrateur',
+    days: ['Deadline Dimanche'],
+    involvements: [
+      {
+        day: 'Deadline Dimanche', scene: 'Enregistrement Voix Off complètes',
+        lieu: 'Espace calme sans écho (chambre, local isolé…)',
+        task: 'Enregistrement de toutes les voix off : intro campus, mythologie du bélier, prophétie, transitions entre actes, voix off finale.',
+        prep: ['Micro + logiciel d\'enregistrement', 'Texte complet du scénario imprimé', 'Ton naturel pour l\'intro, plus mythique/épique pour la prophétie'],
+        scripts: [
+          { char: 'VO — Intro', line: 'Certains disent qu\'autrefois cette terre portait un autre nom. Isminia. Une terre vivante. Les jeunes s\'y rassemblaient. Les rires y circulaient librement.' },
+          { char: 'VO — Prophétie', line: 'Il était une fois, Le vieux bélier veillait autrefois sur des prairies fertiles. Les fruits étaient abondants. Les moutons paissaient sous un ciel éclatant. Puis le bélier tomba malade. La terre devint grise. Les enfants cessèrent de se rassembler.' },
+          { char: 'VO — Prophétie (suite)', line: 'Une prophétie fut écrite. Un enfant d\'Isminia partirait à la quête de la Jouvence Dynamitée. Seul remède capable de ranimer le gardien. Pour l\'obtenir, il devra trouver le Coyote dans ce far west où rôdent de nombreux rebelles.' },
+          { char: 'VO — Finale', line: 'Auxence a longtemps cherché comment rétablir la bonne humeur et la cohésion à l\'Ismin. Derrière cette quête ne se cachait pas seulement un rêve de 1A : c\'était une véritable volonté de transformer ce campus en un lieu paisible. Il a longtemps cherché le bélier… mais le bélier résidait en lui, en vous, en toi.' }
+        ]
+      }
+    ]
+  },
+  'Baptiste': {
+    role: 'Figurant / Drone / Enceintes scène finale',
+    days: ['Jeudi', 'Vendredi'],
+    involvements: [
+      {
+        day: 'Avant dimanche (deadline)', scene: 'Plans Drone — ME vide & animée',
+        lieu: 'Maison des Élèves — extérieur, patio, potager',
+        task: 'Filmer la ME vide (couleurs désaturées) puis animée avec figurants.',
+        prep: ['Drone chargé et disponible', 'Sondage figurants fait en amont'],
+        scripts: []
+      },
+      { day: 'Jeudi ~19h', scene: 'Scènes ME', lieu: 'Maison des Élèves', task: 'Baptiste DOIT être présent pour les scènes ping-pong, baby-foot, Comif.', prep: ['Être disponible ce soir-là'], scripts: [] },
+      {
+        day: 'Vendredi ~18h', scene: 'Scène finale — Acte 4',
+        lieu: 'Salle commune — ex. salle 1100 ou 1200',
+        task: 'Monte le son avec ses enceintes — elles sont un prop de la scène (la musique devient physiquement plus forte dans le film à ce moment).',
+        prep: ['Enceintes Bluetooth', 'Mêmes tenues'],
+        scripts: [{ char: 'BAPTISTE (Pote 6)', line: '(monte le son — les enceintes de Baptiste = prop de la scène)' }]
+      }
+    ]
+  },
+  'Youenn': {
+    role: 'Montage + Affiches WANTED — Deadline Dimanche',
+    days: ['Jeudi', 'Deadline Dimanche'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photos Freeze Frames', lieu: 'À déterminer', task: 'Présent pour gérer la création des affiches WANTED à partir des photos prises par Bastien.', prep: ['Logiciel de graphisme prêt'], scripts: [] },
+      { day: 'Deadline Dimanche', scene: 'Affiches WANTED finalisées', lieu: '—', task: 'Toutes les affiches des personnages doivent être rendues pour dimanche.', prep: ['Photos de Bastien reçues', 'Template affiche WANTED western créé', 'Une affiche par personnage principal'], scripts: [] }
+    ]
+  },
+  'Clément': { role: 'Figurant — Scènes ME & Finale', days: ['Jeudi', 'Vendredi'], involvements: [{ day: 'Jeudi ~19h + Vendredi ~18h', scene: 'Scènes ME & Scène finale', lieu: 'ME jeudi / Salle commune vendredi', task: 'Ambiance ping-pong, baby-foot, Comif. Scène finale soirée jeux.', prep: ['Disponible jeudi ~19h', 'Disponible vendredi ~18h'], scripts: [] }] },
+  'Nicolas': { role: 'Figurant — Scènes ME & Finale', days: ['Jeudi', 'Vendredi'], involvements: [{ day: 'Jeudi ~19h + Vendredi ~18h', scene: 'Scènes ME & Scène finale', lieu: 'ME jeudi / Salle commune vendredi', task: 'Ambiance ping-pong, baby-foot, Comif. Scène finale soirée jeux.', prep: ['Disponible jeudi ~19h', 'Disponible vendredi ~18h'], scripts: [] }] },
+  'Mariem': { role: 'Figurante — Scènes ME & Finale', days: ['Jeudi', 'Vendredi'], involvements: [{ day: 'Jeudi ~19h + Vendredi ~18h', scene: 'Scènes ME & Scène finale', lieu: 'ME jeudi / Salle commune vendredi', task: 'Ambiance ping-pong, baby-foot, Comif. Scène finale soirée jeux.', prep: ['Disponible jeudi ~19h', 'Disponible vendredi ~18h'], scripts: [] }] },
+  'Peter': { role: 'Figurant — Scènes ME & Finale', days: ['Jeudi', 'Vendredi'], involvements: [{ day: 'Jeudi ~19h + Vendredi ~18h', scene: 'Scènes ME & Scène finale', lieu: 'ME jeudi / Salle commune vendredi', task: 'Ambiance ping-pong, baby-foot, Comif. Scène finale soirée jeux.', prep: ['Disponible jeudi ~19h', 'Disponible vendredi ~18h'], scripts: [] }] },
+  'Noa': {
+    role: 'As de la com — Joueur de cartes, complice de Thibault',
+    days: ['Jeudi (photos)', 'Vendredi', 'Samedi'],
+    involvements: [
+      { day: 'Jeudi aprem', scene: 'Photo Freeze Frame', lieu: 'À déterminer', task: 'Photo pour l\'affiche WANTED de Noa.', prep: ['Tenue tournage', 'Cartes en main'], scripts: [] },
+      { day: 'Vendredi ~18h', scene: 'Fond Vert — Scène finale (Acte 4)', lieu: 'Salle commune — ex. salle 1100 ou 1200', task: 'Déjà installé dans la pièce quand Auxence et les potes arrivent. Scène soirée jeux.', prep: ['Mêmes tenues'], scripts: [] },
+      {
+        day: 'Samedi 10h', scene: 'Saloon — Acte 2',
+        lieu: 'Plan A : The Rider Saloon / Plan B : Salle commune',
+        task: 'Joueur de cartes aux côtés de Thibault. Les deux forment le duo "as de la com" à la table de poker.',
+        prep: ['Tenue tournage COMPLÈTE', 'Mallette de poker', 'Être sur place à 10h pile'],
+        scripts: []
+      }
+    ]
+  },
+  'Mathis': { role: 'Figurant — Scènes ME & Finale', days: ['Jeudi', 'Vendredi'], involvements: [{ day: 'Jeudi ~19h + Vendredi ~18h', scene: 'Scènes ME & Scène finale', lieu: 'ME jeudi / Salle commune vendredi', task: 'Ambiance ping-pong, baby-foot, Comif. Scène finale soirée jeux.', prep: ['Disponible jeudi ~19h', 'Disponible vendredi ~18h'], scripts: [] }] },
+  'Mathieu': { role: 'Figurant — Scènes ME & Finale', days: ['Jeudi', 'Vendredi'], involvements: [{ day: 'Jeudi ~19h + Vendredi ~18h', scene: 'Scènes ME & Scène finale', lieu: 'ME jeudi / Salle commune vendredi', task: 'Ambiance ping-pong, baby-foot, Comif. Scène finale soirée jeux.', prep: ['Disponible jeudi ~19h', 'Disponible vendredi ~18h'], scripts: [] }] }
+};
+
+// ═══ BUILD SCHEDULE ═══
+function buildSchedule() {
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = '';
+
+  const dataDays = DAYS.filter(d => !d.isTime);
+  const colCount = dataDays.length;
+
+  // Update grid columns (time label + data cols)
+  grid.style.gridTemplateColumns = `140px repeat(${colCount - 1}, minmax(175px,1fr)) minmax(200px,230px)`;
+
+  // Row 1: headers
+  // Time column header
+  const timeHd = document.createElement('div');
+  timeHd.className = 'col-header';
+  timeHd.innerHTML = `<div class="col-day">Horaire</div><div class="col-label">Jour</div>`;
+  grid.appendChild(timeHd);
+
+  dataDays.forEach(d => {
+    const hd = document.createElement('div');
+    hd.className = 'col-header' + (d.isDeadline ? ' deadline-col' : '');
+    hd.innerHTML = `<div class="col-day">${d.isDeadline ? 'deadline' : d.key}</div><div class="col-label${d.isDeadline?' red':''}">${d.label}</div>${d.sub ? `<div class="col-sub">${d.sub}</div>` : ''}`;
+    grid.appendChild(hd);
+  });
+
+  // Find max events per column
+  const maxEvents = Math.max(...dataDays.map(d => (d.events||[]).length));
+
+  // Row 2: bodies — we render one big row of column bodies
+  // Time column body (just spacer)
+  const timeBody = document.createElement('div');
+  timeBody.className = 'col-body';
+  timeBody.style.justifyContent = 'flex-start';
+  // Gather all unique times from all days for the time axis — simplified: just empty spacer
+  grid.appendChild(timeBody);
+
+  dataDays.forEach(d => {
+    const body = document.createElement('div');
+    body.className = 'col-body';
+    (d.events || []).forEach(ev => {
+      const card = document.createElement('div');
+      card.className = 'event-card' + (ev.isDeadline ? ' deadline' : '');
+      card.onclick = () => openModal(ev);
+
+      const shown = ev.cast.slice(0, 4);
+      const more = ev.cast.length > 4 ? ev.cast.length - 4 : 0;
+      const chips = shown.map(p =>
+        `<span class="chip" onclick="event.stopPropagation();openCast('${p}')">${p}</span>`
+      ).join('') + (more ? `<span class="chip">+${more}</span>` : '');
+
+      card.innerHTML = `<div class="event-time">${ev.time}</div><div class="event-title">${ev.title}</div><div class="event-chips">${chips}</div><span class="event-arrow">↗</span>`;
+      body.appendChild(card);
+    });
+    grid.appendChild(body);
+  });
+}
+
+// ═══ MODAL ═══
+function openModal(ev) {
+  document.getElementById('mTime').textContent = ev.time;
+  document.getElementById('mTitle').textContent = ev.title;
+
+  let h = '';
+
+  // Lieu
+  if (ev.lieu && ev.lieu !== '—') {
+    h += `<div class="modal-section"><div class="sec-label">Lieu</div><div class="lieu-box"><span class="lieu-icon">📍</span>${ev.lieu}</div></div>`;
+  }
+
+  // Description
+  h += `<div class="modal-section"><div class="sec-label">Description</div><div class="modal-desc">${ev.desc.replace(/\n/g,'<br>')}</div></div>`;
+
+  // Prereqs
+  if (ev.prereqs && ev.prereqs.length) {
+    h += `<div class="modal-section"><div class="sec-label">Prérequis</div><ul class="req-list">${ev.prereqs.map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+  }
+
+  // Cast
+  if (ev.cast && ev.cast.length) {
+    h += `<div class="modal-section"><div class="sec-label">Cast concerné</div><div class="modal-cast-chips">${ev.cast.map(p=>`<span class="modal-cast-chip" onclick="openCast('${p}')">${p}</span>`).join('')}</div></div>`;
+  }
+
+  document.getElementById('mBody').innerHTML = h;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('overlay')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('overlay').classList.remove('open'); }
+
+// ═══ CAST ═══
+function buildCast(filter = '') {
+  const grid = document.getElementById('castGrid');
+  grid.innerHTML = '';
+  const lo = filter.toLowerCase();
+  Object.entries(CAST).forEach(([name, data]) => {
+    if (lo && !name.toLowerCase().includes(lo) && !data.role.toLowerCase().includes(lo)) return;
+    const card = document.createElement('div');
+    card.className = 'cast-card';
+    card.id = 'cc-' + name;
+    card.onclick = () => showPerson(name);
+    card.innerHTML = `<div class="cast-name">${name}</div><div class="cast-role">${data.role}</div><div class="cast-day-chips">${data.days.map(d=>`<span class="cast-day-chip">${d}</span>`).join('')}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function filterCast(v) { buildCast(v); }
+
+function showPerson(name) {
+  const data = CAST[name];
+  if (!data) return;
+  document.querySelectorAll('.cast-card').forEach(c => c.classList.remove('active'));
+  const cc = document.getElementById('cc-' + name);
+  if (cc) { cc.classList.add('active'); cc.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  document.getElementById('pdName').textContent = name;
+  document.getElementById('pdRole').textContent = data.role;
+
+  let h = '';
+  data.involvements.forEach(inv => {
+    h += `<div class="inv-block">
+      <div class="inv-hd"><div class="inv-day">${inv.day}</div><div class="inv-scene">${inv.scene}</div></div>
+      <div class="inv-bd">`;
+
+    // Lieu
+    if (inv.lieu && inv.lieu !== '—') {
+      h += `<div><div class="sub-lbl">Lieu</div><div style="font-size:.83rem;color:#333;font-weight:600;display:flex;align-items:center;gap:6px;">📍 ${inv.lieu}</div></div>`;
+    }
+
+    h += `<div class="inv-task">${inv.task}</div>`;
+
+    if (inv.prep && inv.prep.length) {
+      h += `<div><div class="sub-lbl">À prévoir</div><ul class="req-list">${inv.prep.map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+    }
+    if (inv.scripts && inv.scripts.length) {
+      h += `<div><div class="sub-lbl">Répliques</div><div class="script-lines">${inv.scripts.map(s=>`<div class="script-line"><div class="script-char">${s.char}</div><div class="script-text">${s.line}</div></div>`).join('')}</div></div>`;
+    }
+    h += `</div></div>`;
+  });
+
+  document.getElementById('pdBody').innerHTML = h;
+  const det = document.getElementById('personDetail');
+  det.classList.add('open');
+  det.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function closeDetail() {
+  document.getElementById('personDetail').classList.remove('open');
+  document.querySelectorAll('.cast-card').forEach(c => c.classList.remove('active'));
+}
+
+function openCast(name) {
+  closeModalDirect();
+  document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-cast').classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    if (b.textContent.includes('Cast')) b.classList.add('active');
+  });
+  setTimeout(() => { buildCast(''); showPerson(name); }, 60);
+}
+
+// ═══ TABS ═══
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+buildSchedule();
+buildCast();
+</script>
+</body>
+</html>
