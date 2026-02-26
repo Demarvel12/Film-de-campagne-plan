@@ -191,20 +191,28 @@ var DAYS = [
         lieu: "Maison des Élèves — Patio, Comif, baby-foot",
         prereqs: ["Baptiste DOIT être présent", "Sondage figurants fait en amont", "Prévoir voiture(s) si nécessaire"],
         cast: ["Baptiste", "Clément", "Nicolas", "Mariem", "Peter", "Noa", "Mathis", "Youenn", "Mathieu"]
-      }
+      },
+      {
+        time: "14h",
+        title: "Tournage Duel (Acte 2)",
+        desc: "Rue poussiéreuse. Plans resserrés : bottes, mains, yeux. Édouard et Maxence face à face. Auxence surgit au milieu. Tension. Pistolets à eau. Freeze frames.",
+        lieu: "Lieu de l'inté",
+        prereqs: ["Être sur le lieu de tournage à 14h", "Prévoir voiture(s) pour le déplacement", "Bottes + jean + chapeau cowboy", "Pistolets à eau — acheter chez Action"],
+        cast: ["Auxence", "Édouard", "Maxence"]
+      },
+      {
+        time: "~19h",
+        title: "Fond Vert — Videur (Scène devant le Saloon)",
+        desc: "Scène tournée sur fond vert : Jilliane devant le saloon (Acte 2) — bloque l'entrée, refuse pistolet et chapeau, accepte le fromage.",
+        lieu: "BDA — Salle fond vert",
+        prereqs: ["Récupérer le fond vert au BDA", "Tenue tournage COMPLÈTE", "Fromage + saucisson (Maxence apporte)"],
+        cast: ["Jilliane", "Édouard", "Maxence", "Auxence"]
+      },
     ]
   },
   {
     key: "ven", label: "Vendredi", sub: "", isDeadline: false,
     events: [
-      {
-        time: "~18h",
-        title: "Fond Vert — Videur, Porte, Énigme, Finale",
-        desc: "4 scènes tournées sur fond vert :\n• Jilliane devant le saloon (Acte 2)\n• Porte de la Jouvence + compteur dynamite (Acte 3)\n• Auxence seul dans la salle de l'énigme (Acte 3)\n• Scène finale soirée jeux (Acte 4)",
-        lieu: "BDA — Salle fond vert",
-        prereqs: ["Récupérer le fond vert au BDA", "TOUT LE MONDE en tenue tournage", "Apporter un jeu de société pour la scène finale", "Prévoir voitures si nécessaire"],
-        cast: ["Auxence", "Jilliane", "Édouard", "Maxence", "Thibault", "Thiporrah", "Baptiste"]
-      },
       {
         time: "~19h",
         title: "Photos Freeze Frames (affiches WANTED)",
@@ -226,14 +234,6 @@ var DAYS = [
         prereqs: ["Être sur le lieu de tournage à 10h pile", "Confirmer le Rider avant (appel mercredi)", "Prévoir voiture(s) pour le trajet", "Guitar + musique préparée", "Mallette de poker", "Quelques € pour consommations si The Rider", "Tout le monde en tenue tournage"],
         cast: ["Auxence", "Édouard", "Maxence", "Jilliane", "Thibault", "Marin", "Thiporrah", "Camille", "Bastien"]
       },
-      {
-        time: "12h — 13h",
-        title: "Tournage Duel (Acte 2)",
-        desc: "Rue poussiéreuse. Plans resserrés : bottes, mains, yeux. Édouard et Maxence face à face. Auxence surgit au milieu. Tension. Pistolets à eau. Freeze frames.",
-        lieu: "Lieu de l'inté",
-        prereqs: ["Être sur le lieu de tournage à 12h", "Prévoir voiture(s) pour le déplacement", "Bottes + jean + chapeau cowboy", "Pistolets à eau — acheter chez Action"],
-        cast: ["Auxence", "Édouard", "Maxence"]
-      }
     ]
   },
   {
@@ -315,7 +315,7 @@ var CAST = {
         ]
       },
       {
-        day: "Samedi 12h–13h", scene: "Duel — Acte 2",
+        day: "Jeudi 14h", scene: "Duel — Acte 2",
         lieu: "Lieu de l'inté",
         task: "Surgit au milieu du duel Édouard/Maxence. Réagit aux pistolets à eau. Propose à Édouard et Maxence de le rejoindre.",
         prep: ["Tenue tournage COMPLÈTE"],
@@ -329,7 +329,7 @@ var CAST = {
   },
   "Édouard": {
     role: "Édouard le Grand — Cow-boy provocateur, dueliste excessif",
-    days: ["Vendredi (photos)", "Samedi"],
+    days: ["Jeudi", "Vendredi (photos)", "Samedi"],
     involvements: [
       {
         day: "Vendredi ~18h", scene: "Fond Vert — Scène finale (Acte 4)",
@@ -353,7 +353,7 @@ var CAST = {
         scripts: []
       },
       {
-        day: "Samedi 12h–13h", scene: "Duel — Acte 2",
+        day: "Jeudi 14h", scene: "Duel — Acte 2",
         lieu: "Lieu de l'inté",
         task: "Face à Maxence dans le duel. Plans : mains, yeux, bottes. Dégaine le pistolet à eau.",
         prep: ["Tenue tournage (bottes + jean + chapeau cowboy)", "Pistolet à eau", "Prévoir voiture si possible"],
@@ -367,7 +367,7 @@ var CAST = {
   },
   "Maxence": {
     role: "La Canaille Chapardeuse — Comique imprévisible et absurde",
-    days: ["Vendredi (photos)", "Samedi"],
+    days: ["Jeudi", "Vendredi (photos)", "Samedi"],
     involvements: [
       {
         day: "Vendredi ~18h", scene: "Fond Vert — Scène finale (Acte 4)",
@@ -391,7 +391,7 @@ var CAST = {
         scripts: [{ char: "MAXENCE", line: "On a quelque chose que tu ne pourras refuser." }]
       },
       {
-        day: "Samedi 12h–13h", scene: "Duel — Acte 2",
+        day: "Jeudi 14h", scene: "Duel — Acte 2",
         lieu: "Lieu de l'inté",
         task: "Face à Édouard dans le duel. Commentaire absurde à l'arrivée d'Auxence. Dégaine le pistolet à eau.",
         prep: ["Tenue tournage (bottes + jean + chapeau cowboy)", "Pistolet à eau", "Prévoir voiture si possible"],
@@ -404,10 +404,10 @@ var CAST = {
   },
   "Jilliane": {
     role: "Jilou le poids lourd — Videur du Saloon / Respo Sécu Far West",
-    days: ["Vendredi (photos)", "Samedi"],
+    days: ["Vendredi (photos)", "Vendredi soir", "Samedi"],
     involvements: [
       {
-        day: "Vendredi ~18h", scene: "Fond Vert — Devant le Saloon + Finale (Actes 2 & 4)",
+        day: "Jeudi ~19h", scene: "Fond Vert — Devant le Saloon (Acte 2)",
         lieu: "BDA — Salle fond vert",
         task: "Scène videur : bloque l'entrée, refuse pistolet et chapeau, accepte le fromage. Puis scène finale soirée jeux.",
         prep: ["Tenue tournage COMPLÈTE", "Fond vert BDA"],
